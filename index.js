@@ -5,6 +5,8 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 dotenv.config();
 import { connectDb } from "./config/db.js";
+import userRouters from "./routes/userRoutes.js";
+import { notFound, errorHandler } from "./middlewares/errorMiddleware.js";
 
 const port = process.env.PORT || 8003;
 // CONNNECTING DATABASE
@@ -19,8 +21,11 @@ app.use(cookieParser());
 app.use(cors());
 
 // ROUTES
+app.use("/api/users", userRouters);
 
 // CUSTOM MIDDLEWARES
+app.use(notFound);
+app.use(errorHandler);
 
 // SERVER LISTENING ON
 app.get("/", (req, res) => {
