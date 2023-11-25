@@ -46,9 +46,9 @@ export const registerUser = asyncHandler(async (req, res) => {
   if (newUser) {
     return res.status(201).json({
       _id: newUser._id,
-      firstName: newUser.firstName,
-      lastName: newUser.lastName,
+      name: `${newUser.firstName}${newUser.lastName}`,
       email: newUser.email,
+      isActive: false,
       message: `Registration Success, Activation Code Sent To Your ${newUser.email}`,
     });
   } else {
@@ -74,7 +74,10 @@ export const activation = asyncHandler(async (req, res) => {
     user.activateCodeExpires = "";
     user.isActive = true;
     await user.save();
-    res.status(200).json({ message: `Your Account is Activate Now` });
+    console.log(user);
+    res
+      .status(200)
+      .json({ isActive: true, message: `Your Account is Activate Now` });
   } else {
     res.status(400);
     throw new Error(`Activation Code is Not Valid or Expired`);
@@ -95,7 +98,10 @@ export const loginUser = asyncHandler(async (req, res) => {
     const isPasswordValid = await validatingPassword(password, user.password);
     if (isPasswordValid) {
       generateToken(res, user._id);
-      res.status(200).json({ user, message: `User Logged In Successfully` });
+      res.status(200).json({
+        name: `${user.firstName}${user.lastName}`,
+        message: `User Logged In Successfully`,
+      });
     } else {
       res.status(400).json({
         message: `Invalid Credentials`,
