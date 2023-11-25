@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import { connectDb } from "./config/db.js";
 import userRouters from "./routes/userRoutes.js";
+import urlRouters from "./routes/urlRoutes.js";
 import { notFound, errorHandler } from "./middlewares/errorMiddleware.js";
 
 const port = process.env.PORT || 8003;
@@ -22,6 +23,7 @@ app.use(cors());
 
 // ROUTES
 app.use("/api/users", userRouters);
+app.use("/api/urls", urlRouters);
 
 // CUSTOM MIDDLEWARES
 app.use(notFound);

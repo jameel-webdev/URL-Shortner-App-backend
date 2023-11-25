@@ -41,7 +41,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     email,
     password: hashPassword,
     activationCode: hashedActiveCode,
-    expiresTimes: Date.now() + 15 * 60 * 1000,
+    activateCodeExpires: Date.now() + 15 * 60 * 1000,
   });
   if (newUser) {
     return res.status(201).json({
@@ -49,7 +49,7 @@ export const registerUser = asyncHandler(async (req, res) => {
       firstName: newUser.firstName,
       lastName: newUser.lastName,
       email: newUser.email,
-      message: `Registration Success, Activation Link Sent To Your ${newUser.email}`,
+      message: `Registration Success, Activation Code Sent To Your ${newUser.email}`,
     });
   } else {
     res.status(400);
@@ -65,13 +65,13 @@ export const activation = asyncHandler(async (req, res) => {
     .createHash("sha256")
     .update(activeToken)
     .digest("hex");
-  console.log(decodedCode);
   const user = await User.findOne({
     activationCode: decodedCode,
+    activateCodeExpires: { $gt: Date.now() },
   });
   if (user) {
     user.activationCode = "";
-    user.expiryTime = "";
+    user.activateCodeExpires = "";
     user.isActive = true;
     await user.save();
     res.status(200).json({ message: `Your Account is Activate Now` });
@@ -89,23 +89,23 @@ export const loginUser = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: `Please Fill All The Inputs` });
   // Find the User
   const user = await User.findOne({ email });
+  if (!user) throw new Error(`Invalid Credentials`);
   // user Exists
-  if (user) {
-    const isAccountActive = user.isActive;
-    if (isAccountActive) {
-      const isPasswordValid = await validatingPassword(password, user.password);
-      if (isPasswordValid) {
-        generateToken(res, user._id);
-        res.status(200).json({ user, message: `User Logged In Successfully` });
-      }
+  if (user && user.isActive) {
+    const isPasswordValid = await validatingPassword(password, user.password);
+    if (isPasswordValid) {
+      generateToken(res, user._id);
+      res.status(200).json({ user, message: `User Logged In Successfully` });
     } else {
       res.status(400).json({
-        message: `Your account is not activated, Kindly activate your account`,
+        message: `Invalid Credentials`,
       });
     }
   } else {
-    res.status(401);
-    throw new Error(`Invalid Credentials`);
+    res.status(400);
+    throw new Error(
+      `Your account is not activated, Kindly activate your account`
+    );
   }
 });
 
@@ -117,15 +117,64 @@ export const logoutUser = asyncHandler(async (req, res) => {
   });
   return res.status(200).json({ message: `User Logged Out Successfully` });
 });
+
 // FORGOT_PASSWORD - POST /api/users/forgotpassword
 export const forgotPassword = asyncHandler(async (req, res) => {
-  res.json({ message: `Reset Email Sent Successfully` });
+  const { email } = req.body;
+  //check the user
+  const user = await User.findOne({ email });
+  if (!user) return res.status(400).json({ message: `Invalid User Detail` });
+
+  if (user) {
+    const resetCode = crypto.randomBytes(20).toString("hex");
+    const hashedResetCode = crypto
+      .createHash("sha256")
+      .update(resetCode)
+      .digest("hex");
+    const savingToken = await User.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        resetPasswordToken: hashedResetCode,
+        resetTokenExpires: Date.now() + 15 * 60 * 1000,
+      }
+    );
+    const url = `${process.env.FRONTEND_URL}/resetpassword/${resetCode}`;
+    const text = `Click the link to reset your account password ${url}. If you have not requested kindly ignore this mail`;
+
+    await sendMail(user.email, "Reset Account Password", text);
+    return res.status(200).json({
+      message: `Link to reset password has been sent to your ${user.email}`,
+    });
+  }
 });
+
 // REST_PASSWORD - PUT /api/users/resetpassword
 export const resetPassword = asyncHandler(async (req, res) => {
-  res.json({ message: `Password Resetted Successfully` });
+  const { password } = req.body;
+  if (!password)
+    return res.status(400).json({ message: `Provide New Password` });
+  const hashPassword = await generateHashPassword(password);
+  console.log(hashPassword);
+  const { token } = req.params;
+  const decodedToken = crypto.createHash("sha256").update(token).digest("hex");
+  const user = await User.findOne({
+    resetPasswordToken: decodedToken,
+    resetTokenExpires: { $gt: Date.now() },
+  });
+  if (!user)
+    return res.status(400).json({ message: `Invalid Token or Expired` });
+  if (user) {
+    user.password = hashPassword;
+    user.resetPasswordToken = "";
+    user.resetTokenExpires = "";
+    await user.save();
+    return res.status(200).json({ message: `Password Changed Successfully` });
+  }
 });
 // GET ALL USERS - GET /api/users/getallusers
 export const getAllUsers = asyncHandler(async (req, res) => {
-  res.json({ message: `All Users Data Fetched` });
+  const allUsers = await User.find({});
+  return res.status(200).json({ allUsers, message: `All Users Data Fetched` });
 });
