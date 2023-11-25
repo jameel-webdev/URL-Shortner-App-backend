@@ -6,12 +6,15 @@ import {
   forgotPassword,
   resetPassword,
   getAllUsers,
+  activation,
 } from "../controllers/userControllers.js";
 
 const router = express.Router();
 
 // REGISTRATION
 router.route("/register").post(registerUser);
+// ACCOUNT ACTIVATION
+router.route("/activate").post(activation);
 // LOGIN
 router.route("/login").post(loginUser);
 // LOGOUT

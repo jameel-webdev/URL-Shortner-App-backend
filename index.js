@@ -29,7 +29,7 @@ app.use(errorHandler);
 
 // SERVER LISTENING ON
 app.get("/", (req, res) => {
-  res.send(`Welcome to URL-Shortner Server Page`);
+  res.json({ message: `Welcome to URL-Shortner Server Page` });
 });
 app.listen(port, () => {
   console.log(`Server Running On Port ${port}`);

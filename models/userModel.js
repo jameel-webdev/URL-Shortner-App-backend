@@ -19,12 +19,19 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    isActive: {
+      type: Boolean,
+      default: false,
+    },
+    activationCode: String,
     resetPasswordToken: String,
-    resetTokenExpires: String,
+    expiryTime: String,
   },
   {
     timestamps: true,
   }
 );
 
-export const User = mongoose.model("User", userSchema);
+const User = mongoose.model("Users", userSchema);
+
+export default User;
