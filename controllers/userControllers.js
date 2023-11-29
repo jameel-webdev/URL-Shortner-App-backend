@@ -46,7 +46,7 @@ export const registerUser = asyncHandler(async (req, res) => {
   if (newUser) {
     return res.status(201).json({
       _id: newUser._id,
-      name: `${newUser.firstName}${newUser.lastName}`,
+      name: `${newUser.firstName} ${newUser.lastName}`,
       email: newUser.email,
       isActive: false,
       message: `Registration Success, Activation Code Sent To Your ${newUser.email}`,
@@ -74,10 +74,11 @@ export const activation = asyncHandler(async (req, res) => {
     user.activateCodeExpires = "";
     user.isActive = true;
     await user.save();
-    console.log(user);
-    res
-      .status(200)
-      .json({ isActive: true, message: `Your Account is Activate Now` });
+    res.status(200).json({
+      name: `${user.firstName} ${user.lastName}`,
+      isActive: true,
+      message: `Your Account is Activate Now`,
+    });
   } else {
     res.status(400);
     throw new Error(`Activation Code is Not Valid or Expired`);
@@ -99,7 +100,7 @@ export const loginUser = asyncHandler(async (req, res) => {
     if (isPasswordValid) {
       generateToken(res, user._id);
       res.status(200).json({
-        name: `${user.firstName}${user.lastName}`,
+        name: `${user.firstName} ${user.lastName}`,
         message: `User Logged In Successfully`,
       });
     } else {
@@ -108,10 +109,10 @@ export const loginUser = asyncHandler(async (req, res) => {
       });
     }
   } else {
-    res.status(400);
-    throw new Error(
-      `Your account is not activated, Kindly activate your account`
-    );
+    res.status(400).json({
+      isActive: false,
+      message: `Your account is not activated, Kindly activate your account`,
+    });
   }
 });
 
@@ -156,14 +157,12 @@ export const forgotPassword = asyncHandler(async (req, res) => {
   }
 });
 
-// REST_PASSWORD - PUT /api/users/resetpassword
+// REST_PASSWORD - PUT /api/users/resetpassword/:token
 export const resetPassword = asyncHandler(async (req, res) => {
-  const { password } = req.body;
+  const { password, token } = req.body;
   if (!password)
     return res.status(400).json({ message: `Provide New Password` });
   const hashPassword = await generateHashPassword(password);
-  console.log(hashPassword);
-  const { token } = req.params;
   const decodedToken = crypto.createHash("sha256").update(token).digest("hex");
   const user = await User.findOne({
     resetPasswordToken: decodedToken,
@@ -176,7 +175,9 @@ export const resetPassword = asyncHandler(async (req, res) => {
     user.resetPasswordToken = "";
     user.resetTokenExpires = "";
     await user.save();
-    return res.status(200).json({ message: `Password Changed Successfully` });
+    return res
+      .status(200)
+      .json({ success: true, message: `Password Changed Successfully` });
   }
 });
 // GET ALL USERS - GET /api/users/getallusers
