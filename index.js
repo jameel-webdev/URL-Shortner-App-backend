@@ -21,7 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:5173/",
+    origin: "https://zharty.netlify.app/",
     credentials: true,
   })
 );
@@ -30,14 +30,15 @@ app.use(
 app.use("/api/users", userRouters);
 app.use("/api/urls", urlRouters);
 
-// CUSTOM MIDDLEWARES
-app.use(notFound);
-app.use(errorHandler);
-
 // SERVER LISTENING ON
 app.get("/", (req, res) => {
   res.json({ message: `Welcome to URL-Shortner Server Page` });
 });
+
+// CUSTOM MIDDLEWARES
+app.use(notFound);
+app.use(errorHandler);
+
 app.listen(port, () => {
   console.log(`Server Running On Port ${port}`);
 });
