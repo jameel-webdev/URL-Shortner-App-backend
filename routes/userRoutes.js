@@ -22,7 +22,7 @@ router.route("/logout").post(logoutUser);
 // FORGOT-PASSWORD
 router.route("/forgotpassword").post(forgotPassword);
 // RESET-PASSWORD
-router.route("/resetpassword/:token").put(resetPassword);
+router.route("/resetpassword/:token").post(resetPassword);
 // GET ALL USERS
 router.route("/getallusers").get(getAllUsers);
 
